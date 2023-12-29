@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, Pressable } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import CoursesContextProvider from "./store/coursesContext";
 
 import * as Screens from "./screens/_index";
 
@@ -68,21 +69,23 @@ const CourseOverview = () => (
 
 export default function App() {
 	return (
-		<NavigationContainer>
-			<Stack.Navigator>
-				<Stack.Screen
-					name="CourseOverview"
-					component={CourseOverview}
-					options={{
-						headerShown: false,
-					}}
-				/>
-				<Stack.Screen
-					name="ManageCourse"
-					component={Screens.ManageCourse}
-				/>
-			</Stack.Navigator>
-		</NavigationContainer>
+		<CoursesContextProvider>
+			<NavigationContainer>
+				<Stack.Navigator>
+					<Stack.Screen
+						name="CourseOverview"
+						component={CourseOverview}
+						options={{
+							headerShown: false,
+						}}
+					/>
+					<Stack.Screen
+						name="ManageCourse"
+						component={Screens.ManageCourse}
+					/>
+				</Stack.Navigator>
+			</NavigationContainer>
+		</CoursesContextProvider>
 	);
 }
 

@@ -1,13 +1,30 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useLayoutEffect } from "react";
 import { EvilIcons } from "@expo/vector-icons";
+import { useContext, useState } from "react";
+import { CoursesContext } from "../store/coursesContext";
+import * as Components from "../components/_index";
+import {
+	storeCourseToFirebase,
+	updateCourseToFirebase,
+	deleteCourseFromFirebase,
+} from "../lib/http";
 
 export default function ManageCourse({ route, navigation }) {
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [error, setError] = useState(null);
+
 	const courseId = route.params?.courseId;
 
 	let isEditing = false;
 
 	courseId && (isEditing = true);
+
+	const coursesContext = useContext(CoursesContext);
+
+	const selectedCourse = coursesContext.courses.find(
+		(course) => course.id === courseId
+	);
 
 	useLayoutEffect(() => {
 		navigation.setOptions({
@@ -15,30 +32,51 @@ export default function ManageCourse({ route, navigation }) {
 		});
 	}, [navigation, isEditing]);
 
-	const deleteCourse = () => {
-		navigation.goBack();
+	const deleteCourse = async () => {
+		setIsSubmitting(true);
+		setError(null);
+		try {
+			coursesContext.deleteCourse(courseId);
+			await deleteCourseFromFirebase(courseId);
+			navigation.goBack();
+		} catch (error) {
+			setError("Kurs Silinemedi");
+			setIsSubmitting(false);
+		}
 	};
 
-	const cancelHandler = () => {
-		navigation.goBack();
+	const cancelHandler = () => navigation.goBack();
+
+	const addOrUpdateHandler = async (courseData) => {
+		setIsSubmitting(true);
+		setError(null);
+		try {
+			if (isEditing) {
+				await updateCourseToFirebase(courseId, courseData);
+				coursesContext.updateCourse(courseId, courseData);
+			} else {
+				const id = await storeCourseToFirebase(courseData);
+				coursesContext.addCourse({ ...courseData, id: id });
+			}
+			navigation.goBack();
+		} catch (error) {
+			isEditing ? setError("Kurs Güncellenemedi") : setError("Kurs Eklenemedi");
+			setIsSubmitting(false);
+		}
 	};
 
-	return (
+	return isSubmitting ? (
+		<Components.LoadingSpinner />
+	) : error ? (
+		<Components.ErrorText message={error} />
+	) : (
 		<View style={styles.container}>
-			<View style={styles.buttons}>
-				<Pressable onPress={cancelHandler}>
-					<View style={styles.cancel}>
-						<Text style={styles.cancelText}>İptal Et</Text>
-					</View>
-				</Pressable>
-				<Pressable>
-					<View style={styles.addOrDelete}>
-						<Text style={styles.addOrDeleteText}>
-							{isEditing ? "Güncelle" : "Ekle"}
-						</Text>
-					</View>
-				</Pressable>
-			</View>
+			<Components.CourseForm
+				cancelHandler={cancelHandler}
+				onSubmit={addOrUpdateHandler}
+				buttonLabel={isEditing ? "Güncelle" : "Ekle"}
+				defaultValues={selectedCourse}
+			/>
 
 			{isEditing && (
 				<View style={styles.deleteContainer}>
@@ -65,29 +103,5 @@ const styles = StyleSheet.create({
 		borderTopColor: "blue",
 		paddingTop: 10,
 		marginTop: 16,
-	},
-	buttons: {
-		flexDirection: "row",
-		justifyContent: "center",
-	},
-	cancel: {
-		backgroundColor: "red",
-		minWidth: 120,
-		marginRight: 10,
-		padding: 8,
-		alignItems: "center",
-	},
-	cancelText: {
-		color: "white",
-	},
-	addOrDelete: {
-		backgroundColor: "blue",
-		minWidth: 120,
-		marginRight: 10,
-		padding: 8,
-		alignItems: "center",
-	},
-	addOrDeleteText: {
-		color: "white",
 	},
 });

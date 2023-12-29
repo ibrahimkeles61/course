@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
+
 export default function CoursesSummary({ periodName, courses }) {
 	const coursesSum = courses.reduce((sum, course) => {
 		return sum + course.amount;
@@ -11,6 +12,7 @@ export default function CoursesSummary({ periodName, courses }) {
 		</View>
 	);
 }
+
 const styles = StyleSheet.create({
 	container: {
 		flexDirection: "row",
